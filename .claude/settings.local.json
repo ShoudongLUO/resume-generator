@@ -18,7 +18,17 @@
       "Bash(dir /b app\\\\prompts)",
       "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest tests/unit/test_resume_markdown.py -v)",
       "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest tests/unit/test_generate_service.py -v)",
-      "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"from app.services.llm.service import _build_prompt; s=_build_prompt\\({'basic_info':{'name':'x'}}, {'target_role':'后端'}\\); print\\('PROMPT_OK', len\\(s\\)\\); assert 'tailored_resume' in s and '后端' in s\")"
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"from app.services.llm.service import _build_prompt; s=_build_prompt\\({'basic_info':{'name':'x'}}, {'target_role':'后端'}\\); print\\('PROMPT_OK', len\\(s\\)\\); assert 'tailored_resume' in s and '后端' in s\")",
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest tests/unit -q; git log --oneline -4)",
+      "PowerShell(Get-ChildItem app\\\\routes -ErrorAction SilentlyContinue | Select-Object Name; \"---\"; Get-ChildItem app\\\\services\\\\llm | Select-Object Name)",
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"import app.routes.generate; print\\('ok'\\)\")",
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"from app.main import app; paths=[r.path for r in app.routes]; print\\(paths\\); assert '/api/auth/register' in paths and '/api/generate' in paths and '/api/runs' in paths\")",
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest tests/unit -q)",
+      "Bash(dir /b)",
+      "Bash(dir /b tests\\\\unit)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/unit -q)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
