@@ -38,7 +38,10 @@
       "Bash(dir)",
       "Bash(type .gitignore)",
       "Bash(git -C /d/Resume_Generator log --oneline -5)",
-      "Bash(git -C /d/Resume_Generator ls-files)"
+      "Bash(git -C /d/Resume_Generator ls-files)",
+      "Bash(git -C /d/Resume_Generator add -A)",
+      "Bash(git -C /d/Resume_Generator commit -m \"feat: Vue SPA frontend \\(profile/settings/generate/history/export\\)\" -q)",
+      "Bash(git -C /d/Resume_Generator log --oneline -1)"
     ]
   }
 }
