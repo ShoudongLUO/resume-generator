@@ -6,3 +6,4 @@ data.db
 .pytest_cache/
 .coverage
 *.egg-info/
+.claude/settings.local.json
