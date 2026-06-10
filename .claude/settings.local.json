@@ -28,7 +28,8 @@
       "Bash(dir /b tests\\\\unit)",
       "Bash(.venv/Scripts/python.exe -m pytest tests/unit -q)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/integration/test_auth.py tests/integration/test_profile.py -v)"
     ]
   }
 }
