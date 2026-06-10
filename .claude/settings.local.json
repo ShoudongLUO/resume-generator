@@ -16,7 +16,9 @@
       "Bash(dir /b app\\\\services\\\\llm app)",
       "Bash(dir /b tests)",
       "Bash(dir /b app\\\\prompts)",
-      "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest tests/unit/test_resume_markdown.py -v)"
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest tests/unit/test_resume_markdown.py -v)",
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest tests/unit/test_generate_service.py -v)",
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"from app.services.llm.service import _build_prompt; s=_build_prompt\\({'basic_info':{'name':'x'}}, {'target_role':'后端'}\\); print\\('PROMPT_OK', len\\(s\\)\\); assert 'tailored_resume' in s and '后端' in s\")"
     ]
   }
 }
