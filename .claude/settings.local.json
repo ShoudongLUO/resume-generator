@@ -32,7 +32,9 @@
       "Bash(.venv/Scripts/python.exe -m pytest tests/integration/test_auth.py tests/integration/test_profile.py -v)",
       "Bash(.venv/Scripts/python.exe -m pytest tests/integration/test_generate.py -v)",
       "Bash(.venv/Scripts/python.exe -m pytest --cov=app/services --cov=app/routes --cov-report=term-missing)",
-      "Bash(grep -v -E \"Deprecation|wrap_callable|StarletteDeprecation|testclient|utcnow|warnings summary|^$|^tests/|Docs:\")"
+      "Bash(grep -v -E \"Deprecation|wrap_callable|StarletteDeprecation|testclient|utcnow|warnings summary|^$|^tests/|Docs:\")",
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest tests/unit -v)",
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest --cov=app/services --cov=app/routes --cov-report=term-missing)"
     ]
   }
 }
