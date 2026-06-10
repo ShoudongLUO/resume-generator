@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"import secrets;from cryptography.fernet import Fernet;print\\('JWT_SECRET='+secrets.token_urlsafe\\(64\\)\\);print\\('LLM_ENC_KEY='+Fernet.generate_key\\(\\).decode\\(\\)\\)\")",
+      "PowerShell(git *)"
+    ]
+  }
+}
