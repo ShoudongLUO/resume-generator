@@ -3,7 +3,9 @@
     "allow": [
       "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"import secrets;from cryptography.fernet import Fernet;print\\('JWT_SECRET='+secrets.token_urlsafe\\(64\\)\\);print\\('LLM_ENC_KEY='+Fernet.generate_key\\(\\).decode\\(\\)\\)\")",
       "PowerShell(git *)",
-      "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"from app.db.models import Base; print\\(sorted\\(Base.metadata.tables\\)\\)\")"
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"from app.db.models import Base; print\\(sorted\\(Base.metadata.tables\\)\\)\")",
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"import app.services.crypto, app.services.auth, app.services.quota, app.services.llm.base, app.services.llm.gemini_provider, app.services.llm.openai_compat; print\\('ok'\\)\")",
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -c \"from app.services.llm.factory import build_provider_for_user; print\\('ok'\\)\")"
     ]
   }
 }
