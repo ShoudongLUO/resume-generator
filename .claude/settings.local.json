@@ -34,7 +34,11 @@
       "Bash(.venv/Scripts/python.exe -m pytest --cov=app/services --cov=app/routes --cov-report=term-missing)",
       "Bash(grep -v -E \"Deprecation|wrap_callable|StarletteDeprecation|testclient|utcnow|warnings summary|^$|^tests/|Docs:\")",
       "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest tests/unit -v)",
-      "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest --cov=app/services --cov=app/routes --cov-report=term-missing)"
+      "PowerShell(.venv\\\\Scripts\\\\python.exe -m pytest --cov=app/services --cov=app/routes --cov-report=term-missing)",
+      "Bash(dir)",
+      "Bash(type .gitignore)",
+      "Bash(git -C /d/Resume_Generator log --oneline -5)",
+      "Bash(git -C /d/Resume_Generator ls-files)"
     ]
   }
 }
