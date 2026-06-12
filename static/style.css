@@ -138,8 +138,17 @@ button.ghost:hover { background: var(--surface-2); border-color: #d0d4da; }
 .tpl-chip { flex: 0 0 auto; width: 96px; cursor: pointer; border: 2px solid transparent;
   border-radius: 10px; padding: 4px; background: var(--surface-2); transition: border .15s; }
 .tpl-chip.active { border-color: var(--primary); }
-.tpl-thumb { height: 64px; border-radius: 6px; overflow: hidden; background: #fff;
-  border: 1px solid var(--border); }
+.tpl-thumb { position: relative; display: flex; height: 64px; padding: 7px; gap: 5px;
+  border-radius: 6px; overflow: hidden; background: #fff; border: 1px solid var(--border); }
+.tpl-thumb .th-strip { display: none; width: 30%; background: var(--accent); border-radius: 3px; }
+.tpl-thumb.thumb-sidebar-left .th-strip,
+.tpl-thumb.thumb-sidebar-right .th-strip { display: block; }
+.tpl-thumb.thumb-sidebar-right { flex-direction: row-reverse; }
+.tpl-thumb .th-body { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.tpl-thumb .th-head { height: 8px; width: 55%; background: var(--accent); border-radius: 2px; }
+.tpl-thumb.thumb-pro .th-head { width: 100%; }
+.tpl-thumb .th-line { height: 4px; background: #e4e6ea; border-radius: 2px; }
+.tpl-thumb .th-line.short { width: 65%; }
 .tpl-name { font-size: 11.5px; text-align: center; margin-top: 4px; color: var(--text); }
 .accent-dots { display: flex; gap: 7px; flex-wrap: wrap; margin: 8px 0 4px; }
 .accent-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer;

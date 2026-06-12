@@ -304,7 +304,16 @@ const app = createApp({
             </h3>
             <div class="tpl-bar">
               <div v-for="t in templates" :key="t.id" class="tpl-chip" :class="{active: t.id===templateId}" @click="pickTemplate(t.id)">
-                <div class="tpl-thumb" :class="'tpl-'+t.id+' layout-'+t.layout" :style="{'--accent': accentHex(t.defaultAccent)}"></div>
+                <div class="tpl-thumb" :class="['thumb-'+t.layout, {'thumb-pro': t.id==='professional'}]" :style="{'--accent': accentHex(t.defaultAccent)}">
+                  <div class="th-strip"></div>
+                  <div class="th-body">
+                    <div class="th-head"></div>
+                    <div class="th-line"></div>
+                    <div class="th-line short"></div>
+                    <div class="th-line"></div>
+                    <div class="th-line short"></div>
+                  </div>
+                </div>
                 <div class="tpl-name">{{ t.name }}</div>
               </div>
             </div>
