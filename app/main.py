@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -10,10 +11,19 @@ from fastapi.staticfiles import StaticFiles
 from app.db.init import init_db
 from app.routes import auth, generate, llm_config, profile, runs
 
+logger = logging.getLogger("uvicorn.error")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    # Best-effort table creation. If the database is unreachable/misconfigured we
+    # log it but still let the app start, so the SPA loads and a clear error
+    # surfaces per-request instead of every route returning an opaque 500
+    # ("Application startup failed").
+    try:
+        init_db()
+    except Exception:  # noqa: BLE001
+        logger.exception("init_db() failed at startup; continuing without table init")
     yield
 
 
