@@ -1,0 +1,133 @@
+/* ============ A4 page base ============ */
+.resume-page {
+  --accent: #4f46e5;
+  --r-fg: #1a1a1a; --r-muted: #555; --r-rule: #e2e2e2;
+  width: 210mm; max-width: 100%; min-height: 280mm; margin: 0 auto;
+  background: #fff; color: var(--r-fg); padding: 18mm 16mm; line-height: 1.5;
+  box-shadow: 0 2px 14px rgba(0,0,0,.10); border-radius: 4px;
+}
+.font-sans  { font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+.font-serif { font-family: Georgia, "Songti SC", "SimSun", "Noto Serif SC", serif; }
+.font-mono  { font-family: "SFMono-Regular", "Cascadia Code", Consolas, "Courier New", monospace; }
+
+/* shared building blocks */
+.r-name-main { font-size: 26px; font-weight: 700; color: var(--r-fg); }
+.r-contacts-main { color: var(--r-muted); font-size: 12.5px; margin-top: 4px; }
+.r-contacts-main .r-c:not(:last-child)::after { content: "·"; margin: 0 7px; color: #bbb; }
+.r-section { margin-top: 16px; }
+.r-h { font-size: 14px; font-weight: 700; color: var(--accent); margin: 0 0 8px;
+  text-transform: none; }
+.r-p { margin: 4px 0; font-size: 13px; color: var(--r-fg); }
+.r-entry { margin-bottom: 10px; }
+.r-entry-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.r-entry-title { font-weight: 600; font-size: 13.5px; }
+.r-entry-span { color: var(--r-muted); font-size: 12px; white-space: nowrap; }
+.r-bullets { margin: 5px 0 0; padding-left: 18px; }
+.r-bullets li { font-size: 13px; margin: 2px 0; }
+
+/* aside hidden by default (single/timeline) */
+.r-aside { display: none; }
+.layout-single .r-header, .layout-timeline .r-header { display: block; }
+
+/* ============ Sidebar layouts ============ */
+.layout-sidebar-left.resume-page,
+.layout-sidebar-right.resume-page { display: flex; gap: 0; padding: 0; }
+.layout-sidebar-left .r-aside, .layout-sidebar-right .r-aside {
+  display: block; width: 34%; background: var(--accent); color: #fff;
+  padding: 18mm 12px; }
+.layout-sidebar-right.resume-page { flex-direction: row-reverse; }
+.layout-sidebar-left .r-main, .layout-sidebar-right .r-main { flex: 1; padding: 18mm 14px; }
+.layout-sidebar-left .r-header, .layout-sidebar-right .r-header { display: none; }
+.layout-sidebar-left .r-main-skills, .layout-sidebar-right .r-main-skills { display: none; }
+.r-aside .r-name { font-size: 22px; font-weight: 700; }
+.r-aside .r-contacts { margin-top: 10px; font-size: 12px; opacity: .92; }
+.r-aside .r-contact { margin: 3px 0; word-break: break-all; }
+.r-aside-h { font-size: 12px; font-weight: 700; margin: 18px 0 6px; opacity: .85;
+  border-top: 1px solid rgba(255,255,255,.3); padding-top: 10px; }
+.r-aside .r-skill { font-size: 12px; margin: 3px 0; }
+
+/* ============ Timeline layout ============ */
+.layout-timeline .r-section > .r-entry { position: relative; padding-left: 18px; }
+.layout-timeline .r-section:not(.r-summary) { border-left: 2px solid var(--r-rule); margin-left: 6px; padding-left: 12px; }
+.layout-timeline .r-entry::before {
+  content: ""; position: absolute; left: -7px; top: 6px; width: 9px; height: 9px;
+  border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px #fff; }
+
+/* ============ 12 theme styles ============ */
+/* 1 经典 Classic */
+.tpl-classic .r-header { text-align: center; border-bottom: 2px solid var(--r-fg); padding-bottom: 8px; }
+.tpl-classic .r-contacts-main { text-align: center; }
+.tpl-classic .r-h { color: var(--r-fg); text-transform: uppercase; letter-spacing: .06em;
+  border-bottom: 1px solid var(--r-rule); padding-bottom: 3px; font-size: 13px; }
+
+/* 2 简约 Minimal */
+.tpl-minimal .r-name-main { font-weight: 600; letter-spacing: -.01em; }
+.tpl-minimal .r-section { margin-top: 22px; }
+.tpl-minimal .r-h { display: flex; align-items: center; gap: 8px; font-size: 12.5px;
+  text-transform: uppercase; letter-spacing: .12em; color: var(--r-muted); }
+.tpl-minimal .r-h::before { content: ""; width: 18px; height: 2px; background: var(--accent); }
+
+/* 3 现代 Modern */
+.tpl-modern .r-name-main { color: var(--accent); }
+.tpl-modern .r-h { display: inline-block; background: var(--accent); color: #fff;
+  padding: 2px 10px; border-radius: 4px; font-size: 12.5px; }
+
+/* 4 商务 Professional */
+.tpl-professional .r-header { background: var(--accent); color: #fff; margin: -18mm -16mm 14px;
+  padding: 16mm 16mm 12px; }
+.tpl-professional .r-name-main { color: #fff; }
+.tpl-professional .r-contacts-main { color: rgba(255,255,255,.9); }
+.tpl-professional .r-h { border-left: 3px solid var(--accent); padding-left: 8px; }
+
+/* 5 优雅 Elegant */
+.tpl-elegant .r-name-main { font-weight: 400; font-size: 30px; letter-spacing: .02em; }
+.tpl-elegant .r-h { font-style: italic; font-weight: 600; border-bottom: 1px solid var(--accent);
+  padding-bottom: 4px; }
+
+/* 6 紧凑 Compact */
+.tpl-compact.resume-page { padding: 12mm 12mm; font-size: 12px; line-height: 1.4; }
+.tpl-compact .r-name-main { font-size: 22px; }
+.tpl-compact .r-section { margin-top: 10px; }
+.tpl-compact .r-h { font-size: 12.5px; border-bottom: 1px solid var(--accent); padding-bottom: 2px; }
+.tpl-compact .r-bullets li, .tpl-compact .r-p { font-size: 12px; }
+
+/* 7 科技 Tech */
+.tpl-tech .r-name-main { color: var(--accent); }
+.tpl-tech .r-h::before { content: "# "; color: var(--accent); }
+.tpl-tech .r-h { color: var(--r-fg); font-size: 13px; }
+.tpl-tech .r-entry-span { font-family: inherit; }
+
+/* 8 时间轴 Timeline */
+.tpl-timeline .r-h { color: var(--accent); font-weight: 700; }
+
+/* 9 双栏·左 / 10 双栏·右 */
+.tpl-sidebarL .r-main .r-h, .tpl-sidebarR .r-main .r-h { color: var(--accent);
+  border-bottom: 2px solid var(--r-rule); padding-bottom: 3px; }
+
+/* 11 创意 Creative */
+.tpl-creative .r-aside { background: linear-gradient(160deg, var(--accent), rgba(0,0,0,.25)); }
+.tpl-creative .r-main .r-h { color: var(--accent); text-transform: uppercase; letter-spacing: .08em;
+  font-size: 13px; }
+.tpl-creative .r-main .r-h::after { content: ""; display: inline-block; width: 28px; height: 3px;
+  background: var(--accent); margin-left: 8px; vertical-align: middle; border-radius: 2px; }
+
+/* 12 卡片 Cards */
+.tpl-cards .r-section { background: #f7f8fa; border-radius: 8px; padding: 12px 14px;
+  border-left: 3px solid var(--accent); margin-top: 12px; }
+.tpl-cards .r-h { color: var(--accent); }
+
+/* ============ Print: only the resume page on A4 ============ */
+@media print {
+  @page { size: A4; margin: 0; }
+  body { background: #fff; }
+  .topbar, .no-print, .tpl-bar, .accent-dots, .actions,
+  .results > .rec-col, .results > .gap-col { display: none !important; }
+  .container { max-width: none; margin: 0; padding: 0; }
+  .results { display: block; }
+  .card { border: none; box-shadow: none; padding: 0; margin: 0; background: #fff; }
+  .resume-page {
+    box-shadow: none; border-radius: 0; margin: 0; width: 100%;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .tpl-professional .r-header { margin: 0 0 14px; padding: 12mm 16mm; }
+}

@@ -1,3 +1,4 @@
+/* global Vue, RESUME_TEMPLATES, ACCENTS, ResumePreview, accentHex, templateById */
 const { createApp, reactive, ref, computed, onMounted } = Vue;
 
 const token = ref(localStorage.getItem("token") || "");
@@ -13,13 +14,12 @@ async function api(path, { method = "GET", body, raw = false } = {}) {
   if (!res.ok) throw new Error(data.detail || "请求失败");
   return data;
 }
-
 function logout() {
   token.value = ""; username.value = "";
   localStorage.removeItem("token"); localStorage.removeItem("username");
 }
 
-createApp({
+const app = createApp({
   setup() {
     const view = ref("profile");
     const authMode = ref("login");
@@ -39,8 +39,27 @@ createApp({
     const result = ref(null);
     const genError = ref("");
     const genLoading = ref(false);
-
     const runs = ref([]);
+
+    // templates + accent (persisted)
+    const templates = RESUME_TEMPLATES;
+    const accents = ACCENTS;
+    const templateId = ref(localStorage.getItem("resumeTemplateId") || "modern");
+    const accent = ref(localStorage.getItem("resumeAccent") || "");
+    const currentTemplate = computed(() => templateById(templateId.value));
+    const currentAccent = computed(() => accent.value || accentHex(currentTemplate.value.defaultAccent));
+    function pickTemplate(id) { templateId.value = id; localStorage.setItem("resumeTemplateId", id);
+      const t = templateById(id); accent.value = accentHex(t.defaultAccent);
+      localStorage.setItem("resumeAccent", accent.value); }
+    function pickAccent(hex) { accent.value = hex; localStorage.setItem("resumeAccent", hex); }
+
+    // toast
+    const toasts = ref([]);
+    let toastId = 0;
+    function toast(msg, kind = "") {
+      const id = ++toastId; toasts.value.push({ id, msg, kind });
+      setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 2600);
+    }
 
     const loggedIn = computed(() => !!token.value);
 
@@ -63,7 +82,7 @@ createApp({
     async function saveProfile() {
       profile.skills = skillsText.value.split(",").map(s => s.trim()).filter(Boolean);
       await api("/api/profile", { method: "PUT", body: profile });
-      alert("已保存");
+      toast("主档已保存", "ok");
     }
     const addEdu = () => profile.educations.push({ school: "", major: "", degree: "", start: "", end: "", highlights: "" });
     const addExp = () => profile.experiences.push({ company: "", title: "", start: "", end: "", description: "" });
@@ -87,8 +106,8 @@ createApp({
       try {
         await api("/api/llm-config", { method: "PUT", body: { provider: llm.provider,
           api_key: llm.api_key || null, base_url: llm.base_url || null, model: llm.model || null } });
-        llm.api_key = ""; llmMsg.value = "已保存"; await loadLLM();
-      } catch (e) { llmMsg.value = e.message; }
+        llm.api_key = ""; await loadLLM(); toast("AI 设置已保存", "ok");
+      } catch (e) { llmMsg.value = e.message; toast(e.message, "err"); }
     }
 
     const ERR_MSG = {
@@ -119,7 +138,7 @@ createApp({
 
     async function copyMarkdown() {
       const md = await api(`/api/runs/${result.value.run_id}/markdown`, { raw: true });
-      await navigator.clipboard.writeText(md); alert("Markdown 已复制");
+      await navigator.clipboard.writeText(md); toast("Markdown 已复制", "ok");
     }
     async function downloadMarkdown() {
       const md = await api(`/api/runs/${result.value.run_id}/markdown`, { raw: true });
@@ -136,24 +155,27 @@ createApp({
       profile, skillsText, saveProfile, addEdu, addExp, addProj, del,
       llm, models, llmMsg, fetchModels, saveLLM,
       intent, result, genError, genLoading, generate,
-      runs, openRun, copyMarkdown, downloadMarkdown, printResume };
+      runs, openRun, copyMarkdown, downloadMarkdown, printResume,
+      templates, accents, templateId, currentTemplate, currentAccent, pickTemplate, pickAccent,
+      toasts, accentHex };
   },
   template: `
-  <div v-if="!loggedIn" class="container">
-    <div class="card" style="max-width:380px;margin:80px auto;">
-      <h2>{{ authMode === 'login' ? '登录' : '注册' }}</h2>
-      <label>用户名</label><input v-model="authForm.username" />
-      <label>密码</label><input type="password" v-model="authForm.password" />
+  <div v-if="!loggedIn" class="auth-wrap">
+    <div class="card auth-card">
+      <h2>{{ authMode === 'login' ? '欢迎回来' : '创建账号' }}</h2>
+      <p class="muted">简历生成与公司推荐</p>
+      <label>用户名</label><input v-model="authForm.username" @keyup.enter="doAuth" />
+      <label>密码</label><input type="password" v-model="authForm.password" @keyup.enter="doAuth" />
       <p class="error" v-if="authError">{{ authError }}</p>
-      <p><button class="primary" @click="doAuth">{{ authMode === 'login' ? '登录' : '注册' }}</button></p>
-      <p class="muted" @click="authMode = authMode==='login'?'register':'login'" style="cursor:pointer;">
+      <p style="margin-top:14px;"><button class="primary" style="width:100%" @click="doAuth">{{ authMode === 'login' ? '登录' : '注册' }}</button></p>
+      <p class="muted" @click="authMode = authMode==='login'?'register':'login'" style="cursor:pointer;text-align:center;">
         {{ authMode === 'login' ? '没有账号？去注册' : '已有账号？去登录' }}</p>
     </div>
   </div>
 
   <div v-else>
     <div class="topbar">
-      <strong>简历生成器</strong>
+      <div class="brand"><span class="logo"></span> 简历生成器</div>
       <nav>
         <button :class="{active:view==='profile'}" @click="view='profile'">简历主档</button>
         <button :class="{active:view==='settings'}" @click="view='settings'">AI 设置</button>
@@ -166,7 +188,10 @@ createApp({
     </div>
 
     <div class="container">
+      <!-- profile -->
       <div v-show="view==='profile'">
+        <h1 class="page-title">简历主档</h1>
+        <p class="page-sub">填写一次，后续按不同求职意向反复生成定制简历。</p>
         <div class="card">
           <h3>基本信息</h3>
           <div class="row">
@@ -186,8 +211,9 @@ createApp({
               <div><label>起</label><input v-model="e.start" /></div>
               <div><label>止</label><input v-model="e.end" /></div>
             </div>
-            <button class="ghost" @click="del(profile.educations,i)">删除</button>
+            <button class="ghost item-del" @click="del(profile.educations,i)">删除</button>
           </div>
+          <p class="muted" v-if="!profile.educations.length">还没有教育经历</p>
         </div>
         <div class="card">
           <h3>工作经历 <button class="ghost" @click="addExp">+ 添加</button></h3>
@@ -199,8 +225,9 @@ createApp({
               <div><label>止</label><input v-model="x.end" /></div>
             </div>
             <label>职责与业绩</label><textarea rows="3" v-model="x.description"></textarea>
-            <button class="ghost" @click="del(profile.experiences,i)">删除</button>
+            <button class="ghost item-del" @click="del(profile.experiences,i)">删除</button>
           </div>
+          <p class="muted" v-if="!profile.experiences.length">还没有工作经历</p>
         </div>
         <div class="card">
           <h3>项目经历 <button class="ghost" @click="addProj">+ 添加</button></h3>
@@ -212,8 +239,9 @@ createApp({
             </div>
             <label>描述</label><textarea rows="2" v-model="p.description"></textarea>
             <label>成果</label><input v-model="p.outcome" />
-            <button class="ghost" @click="del(profile.projects,i)">删除</button>
+            <button class="ghost item-del" @click="del(profile.projects,i)">删除</button>
           </div>
+          <p class="muted" v-if="!profile.projects.length">还没有项目经历</p>
         </div>
         <div class="card">
           <h3>技能与自评</h3>
@@ -223,9 +251,12 @@ createApp({
         <button class="primary" @click="saveProfile">保存主档</button>
       </div>
 
+      <!-- settings -->
       <div v-show="view==='settings'">
+        <h1 class="page-title">AI 设置</h1>
+        <p class="page-sub">使用你自己的 API key，数据加密存储。</p>
         <div class="card">
-          <h3>AI 模型设置</h3>
+          <h3>模型配置</h3>
           <label>Provider</label>
           <select v-model="llm.provider">
             <option value="gemini">Google Gemini</option>
@@ -236,21 +267,19 @@ createApp({
           </div>
           <label>API Key <span class="muted" v-if="llm.has_key">（已保存 ****{{ llm.key_tail }}，留空则不修改）</span></label>
           <input type="password" v-model="llm.api_key" placeholder="粘贴你的 API key" />
-          <p>
-            <button class="ghost" @click="fetchModels">拉取模型</button>
-          </p>
+          <p style="margin-top:10px;"><button class="ghost" @click="fetchModels">拉取模型</button></p>
           <div v-if="models.length">
             <label>选择模型</label>
-            <select v-model="llm.model">
-              <option v-for="m in models" :key="m" :value="m">{{ m }}</option>
-            </select>
+            <select v-model="llm.model"><option v-for="m in models" :key="m" :value="m">{{ m }}</option></select>
           </div>
           <p class="muted">{{ llmMsg }}</p>
           <button class="primary" @click="saveLLM">保存设置</button>
         </div>
       </div>
 
+      <!-- generate -->
       <div v-show="view==='generate'">
+        <h1 class="page-title no-print">生成简历</h1>
         <div class="card no-print">
           <h3>求职意向</h3>
           <div class="row">
@@ -261,81 +290,80 @@ createApp({
             <div><label>薪资期望</label><input v-model="intent.salary_expect" /></div>
           </div>
           <label>补充说明</label><textarea rows="2" v-model="intent.notes"></textarea>
-          <p>
-            <button class="primary" @click="generate" :disabled="genLoading">
-              {{ genLoading ? '生成中…' : '生成简历与推荐' }}</button>
-          </p>
+          <p style="margin-top:10px;"><button class="primary" @click="generate" :disabled="genLoading">
+            {{ genLoading ? '生成中…' : '生成简历与推荐' }}</button></p>
           <p class="error" v-if="genError">{{ genError }}</p>
         </div>
 
-        <div v-if="result" class="results">
-          <div class="card">
-            <div class="actions no-print">
-              <button class="ghost" @click="copyMarkdown">复制 Markdown</button>
-              <button class="ghost" @click="downloadMarkdown">下载 .md</button>
-              <button class="ghost" @click="printResume">打印 / 存为 PDF</button>
-            </div>
-            <h2>{{ result.tailored_resume.basic_info?.name }}</h2>
-            <p class="muted">{{ [result.tailored_resume.basic_info?.phone,
-              result.tailored_resume.basic_info?.email,
-              result.tailored_resume.basic_info?.city].filter(Boolean).join(' | ') }}</p>
-            <p v-if="result.tailored_resume.summary"><strong>概述：</strong>{{ result.tailored_resume.summary }}</p>
-            <div v-if="result.tailored_resume.experiences?.length">
-              <h3>工作经历</h3>
-              <div class="item" v-for="(x,i) in result.tailored_resume.experiences" :key="i">
-                <strong>{{ x.company }} · {{ x.title }}</strong> <span class="muted">{{ x.start }}–{{ x.end }}</span>
-                <ul><li v-for="(b,j) in (x.bullets||[])" :key="j">{{ b }}</li></ul>
+        <div v-if="result">
+          <!-- template picker -->
+          <div class="card no-print">
+            <h3>模板与配色
+              <span class="badge" :class="currentTemplate.ats ? 'ats' : 'noats'">
+                {{ currentTemplate.ats ? 'ATS 友好' : '机器筛选解析略弱' }}</span>
+            </h3>
+            <div class="tpl-bar">
+              <div v-for="t in templates" :key="t.id" class="tpl-chip" :class="{active: t.id===templateId}" @click="pickTemplate(t.id)">
+                <div class="tpl-thumb" :class="'tpl-'+t.id+' layout-'+t.layout" :style="{'--accent': accentHex(t.defaultAccent)}"></div>
+                <div class="tpl-name">{{ t.name }}</div>
               </div>
             </div>
-            <div v-if="result.tailored_resume.projects?.length">
-              <h3>项目经历</h3>
-              <div class="item" v-for="(p,i) in result.tailored_resume.projects" :key="i">
-                <strong>{{ p.name }}</strong> <span class="muted">{{ p.role }}</span>
-                <p>{{ p.description }}</p><p v-if="p.outcome">成果：{{ p.outcome }}</p>
-              </div>
-            </div>
-            <div v-if="result.tailored_resume.educations?.length">
-              <h3>教育经历</h3>
-              <div class="item" v-for="(e,i) in result.tailored_resume.educations" :key="i">
-                {{ e.school }} · {{ e.major }} · {{ e.degree }} <span class="muted">{{ e.start }}–{{ e.end }}</span>
-              </div>
-            </div>
-            <div v-if="result.tailored_resume.skills?.length">
-              <h3>技能</h3><p>{{ result.tailored_resume.skills.join(' · ') }}</p>
+            <div class="accent-dots">
+              <span v-for="a in accents" :key="a.id" class="accent-dot"
+                :class="{active: currentAccent===a.hex}" :style="{background:a.hex}" @click="pickAccent(a.hex)"></span>
             </div>
           </div>
 
-          <div class="card rec-col">
-            <h3>推荐投递公司</h3>
-            <p class="muted">AI 基于你的经历推断，非实时招聘数据</p>
-            <div class="item" v-for="(r,i) in result.recommendations" :key="i">
-              <strong>{{ r.company }}</strong> <span class="muted">{{ r.type }}</span>
-              <p>建议岗位：{{ r.suggested_role }}</p>
-              <p>{{ r.reason }}</p>
+          <div class="results">
+            <div>
+              <div class="actions no-print">
+                <button class="ghost" @click="copyMarkdown">复制 Markdown</button>
+                <button class="ghost" @click="downloadMarkdown">下载 .md</button>
+                <button class="primary" @click="printResume">打印 / 存为 PDF</button>
+              </div>
+              <resume-preview :resume="result.tailored_resume" :template="currentTemplate" :accent="currentAccent"></resume-preview>
             </div>
-          </div>
 
-          <div class="card gap-col">
-            <h3>需要完善的点</h3>
-            <div class="item" :class="'gap-'+(g.importance||'低')" v-for="(g,i) in result.gaps" :key="i">
-              <strong>{{ g.gap }}</strong> <span class="muted">[{{ g.importance }}]</span>
-              <p>{{ g.suggestion }}</p>
+            <div class="card rec-col">
+              <h3>推荐投递公司</h3>
+              <p class="muted">AI 基于你的经历推断，非实时招聘数据</p>
+              <div class="item" v-for="(r,i) in result.recommendations" :key="i">
+                <strong>{{ r.company }}</strong> <span class="muted">{{ r.type }}</span>
+                <p class="muted" style="margin:4px 0;">建议岗位：{{ r.suggested_role }}</p>
+                <p style="margin:4px 0;font-size:13px;">{{ r.reason }}</p>
+              </div>
+            </div>
+
+            <div class="card gap-col">
+              <h3>需要完善的点</h3>
+              <div class="item" :class="'gap-'+(g.importance||'低')" v-for="(g,i) in result.gaps" :key="i">
+                <strong>{{ g.gap }}</strong> <span class="badge">{{ g.importance }}</span>
+                <p style="margin:4px 0;font-size:13px;">{{ g.suggestion }}</p>
+              </div>
             </div>
           </div>
         </div>
+        <div v-else class="empty no-print">填写求职意向后点「生成」，结果会显示在这里。</div>
       </div>
 
+      <!-- history -->
       <div v-show="view==='history'">
+        <h1 class="page-title">生成历史</h1>
         <div class="card">
-          <h3>生成历史</h3>
           <div class="item" v-for="r in runs" :key="r.id" @click="openRun(r.id)" style="cursor:pointer;">
             <strong>{{ r.target_role }}</strong>
-            <span class="muted">{{ r.target_city }} · {{ r.created_at?.slice(0,10) }} · {{ r.model_used }}</span>
+            <span class="muted">　{{ r.target_city }} · {{ r.created_at?.slice(0,10) }} · {{ r.model_used }}</span>
           </div>
-          <p class="muted" v-if="!runs.length">暂无记录</p>
+          <p class="empty" v-if="!runs.length">暂无记录</p>
         </div>
       </div>
     </div>
+
+    <div class="toast-wrap">
+      <div v-for="t in toasts" :key="t.id" class="toast" :class="t.kind">{{ t.msg }}</div>
+    </div>
   </div>
   `,
-}).mount("#app");
+});
+app.component("ResumePreview", ResumePreview);
+app.mount("#app");
