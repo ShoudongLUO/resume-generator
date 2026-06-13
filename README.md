@@ -424,7 +424,49 @@ LLM_ENC_KEY=<python -c "from cryptography.fernet import Fernet;print(Fernet.gene
 
 ---
 
+## v3 设计：隐私模糊化（PII 不出本机/不交大模型）（2026-06-13）
+
+### 目标
+调用第三方大模型前，对个人隐私信息脱敏；返回后还原。第三方 LLM 永不接触真实联系方式与公司名。
+
+### 决策
+- **PII 存储**：服务器（你自己应用的 DB）照常存真实数据，仅**不发给大模型**。
+- **模糊范围**：联系方式（姓名/邮箱/电话/链接）整体剔除；公司名用占位符替换；学校/专业/学历/项目/职位/技能/城市保留。
+- **开关**：隐私模式默认开启，可在「AI 设置」关闭；通过 `/api/generate` 的 `privacy_mode` 字段（缺省 True）传递，localStorage 持久化。无 DB 迁移。
+
+### 数据流
+```
+读主档 → [privacy_mode] redact 脱敏 → 发给 LLM(脱敏版) → LLM 返回(含占位符)
+       → restore 还原(占位符→真实公司, 覆盖真实 basic_info) → 落库(真实版) → 返回前端(真实版)
+```
+隐私处理在后端（后端才持 key、才真正调用第三方 LLM）。
+
+### 模糊化规则（确定性，利用结构化字段，无需 NLP）
+- 联系方式：`basic_info` 的 name/phone/email/links 不进 prompt；并把这些真实值在所有自由文本（summary、experiences[].description、bullets、projects[].description/outcome、educations[].highlights）中出现处替换为 `[姓名]`/`[邮箱]`/`[电话]`/`[链接N]`。
+- 公司名：收集 `experiences[].company` 唯一非空值 → `[公司1]/[公司2]…`，替换 company 字段并替换正文同名字符串（按长度降序替换以避免子串冲突）。
+- 保留：学校、专业、学历、项目名、职位、技能、城市。
+
+### 还原与持久化
+- 对返回的 `tailored_resume`/`recommendations`/`gaps` 中所有字符串做占位符→真实值全量替换；`tailored_resume.basic_info` 用库中真实值覆盖（不信任 LLM 回填）。
+- `resume_run` 落库还原后的真实版。
+
+### Prompt
+`prompts/generate.py` 增加指令：遇到形如 `[公司1]`、`[姓名]` 的方括号占位符必须原样保留，不得翻译或改写。
+
+### 文件
+- 新增 `app/services/privacy.py`（`redact_profile(profile, enabled) -> (redacted, restore_map)`、`restore_pii(obj, restore_map, real_basic_info)`，纯函数）。
+- 改 `app/routes/generate.py`（`GenerateIn.privacy_mode`，接入 redact/restore，落库真实版）。
+- 改 `app/prompts/generate.py`（占位符保留指令）。
+- 改 `static/app.js`（隐私模式开关 + localStorage + 请求带 `privacy_mode`）。
+
+### 测试（TDD，services 覆盖率维持 ≥80%）
+- 单元 `privacy.py`：联系方式剔除、公司占位符映射、正文同名替换、子串降序、redact→restore 往返一致、隐私关时原样。
+- 集成 `/api/generate`：mock provider 捕获 prompt，断言不含真实姓名/公司、含 `[公司1]`；返回与落库含真实公司名；`privacy_mode=false` 时 prompt 含真实值。
+
+---
+
 ## 变更记录
 
 - 2026-06-09 v1：初版设计
 - 2026-06-12 v2：系统 UI 重设计 + 12 简历模板（纯前端、localStorage 持久化）
+- 2026-06-13 v3：隐私模糊化（联系方式剔除 + 公司名占位符，后端 redact/restore，默认开可关）
