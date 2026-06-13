@@ -33,6 +33,8 @@ const app = createApp({
     const llm = reactive({ provider: "gemini", api_key: "", base_url: "", model: "", has_key: false, key_tail: null });
     const models = ref([]);
     const llmMsg = ref("");
+    const privacyMode = ref(localStorage.getItem("privacyMode") !== "0");
+    function savePrivacy() { localStorage.setItem("privacyMode", privacyMode.value ? "1" : "0"); }
 
     const intent = reactive({ target_role: "", target_industry: "", target_city: "",
       work_type: "", salary_expect: "", notes: "" });
@@ -121,7 +123,7 @@ const app = createApp({
     async function generate() {
       genError.value = ""; result.value = null; genLoading.value = true;
       try {
-        const r = await api("/api/generate", { method: "POST", body: { ...intent } });
+        const r = await api("/api/generate", { method: "POST", body: { ...intent, privacy_mode: privacyMode.value } });
         if (r.error) { genError.value = ERR_MSG[r.error] || r.error; }
         else { result.value = r; await loadRuns(); }
       } catch (e) { genError.value = e.message; }
@@ -157,7 +159,7 @@ const app = createApp({
       intent, result, genError, genLoading, generate,
       runs, openRun, copyMarkdown, downloadMarkdown, printResume,
       templates, accents, templateId, currentTemplate, currentAccent, pickTemplate, pickAccent,
-      toasts, accentHex };
+      toasts, accentHex, privacyMode, savePrivacy };
   },
   template: `
   <div v-if="!loggedIn" class="auth-wrap">
@@ -274,6 +276,14 @@ const app = createApp({
           </div>
           <p class="muted">{{ llmMsg }}</p>
           <button class="primary" @click="saveLLM">保存设置</button>
+        </div>
+        <div class="card">
+          <h3>隐私</h3>
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:14px;color:var(--text);">
+            <input type="checkbox" v-model="privacyMode" @change="savePrivacy" style="width:auto;margin-top:2px;" />
+            <span>隐私模式（推荐开启）：发送给 AI 前自动隐去<b>姓名 / 邮箱 / 电话 / 链接</b>，并把<b>公司名</b>替换为占位符，返回后在本地还原。学校、项目、技能、城市照常发送。</span>
+          </label>
+          <p class="muted" style="margin-top:8px;">{{ privacyMode ? '已开启：第三方大模型不会看到你的联系方式与公司名。' : '已关闭：将按原文发送给大模型。' }}</p>
         </div>
       </div>
 

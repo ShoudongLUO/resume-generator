@@ -11,6 +11,7 @@ from app.services.auth import current_user
 from app.services.llm.base import LLMParseError, LLMUnavailable
 from app.services.llm.factory import build_provider_for_user
 from app.services.llm.service import generate_application
+from app.services.privacy import redact_profile, restore_pii
 from app.services.quota import bump_quota, today_quota
 
 router = APIRouter(prefix="/api", tags=["generate"])
@@ -23,6 +24,7 @@ class GenerateIn(BaseModel):
     work_type: str | None = None
     salary_expect: str | None = None
     notes: str | None = None
+    privacy_mode: bool = True
 
 
 def _profile_empty(p: ResumeProfile | None) -> bool:
@@ -56,12 +58,16 @@ def generate(body: GenerateIn, db: Session = Depends(get_db),
         "skills": profile.skills, "self_summary": profile.self_summary,
     }
     intent = body.model_dump()
+    redacted, restore_map = redact_profile(profile_dict, body.privacy_mode)
     try:
-        result = generate_application(provider, profile_dict, intent)
+        result = generate_application(provider, redacted, intent)
     except LLMUnavailable:
         return {"error": "LLM_UNAVAILABLE"}
     except LLMParseError:
         return {"error": "PARSE_FAILED"}
+
+    if body.privacy_mode:
+        result = restore_pii(result, restore_map, profile.basic_info or {})
 
     bump_quota(db, user.id)
     run = ResumeRun(

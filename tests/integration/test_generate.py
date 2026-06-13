@@ -98,3 +98,55 @@ def test_generate_then_appears_in_runs(client, auth_headers, monkeypatch):
     assert any(x["id"] == run_id for x in runs)
     md = client.get(f"/api/runs/{run_id}/markdown", headers=h)
     assert md.status_code == 200 and "# 张三" in md.text
+
+
+class _CapturingProvider:
+    available = True
+    model = "fake-model"
+
+    def __init__(self):
+        self.prompt = None
+
+    def generate(self, prompt, *, temperature=0.7):
+        self.prompt = prompt
+        return ('{"tailored_resume":{"basic_info":{},"summary":"在[公司1]工作",'
+                '"experiences":[],"projects":[],"educations":[],"skills":[]},'
+                '"recommendations":[{"company":"字节","type":"x","reason":"类似[公司1]","suggested_role":"后端"}],'
+                '"gaps":[{"gap":"g","importance":"高","suggestion":"s"}]}')
+
+
+def _fill_pii_profile(client, h):
+    client.put("/api/profile", json={
+        "basic_info": {"name": "张三", "email": "z@x.com", "phone": "13800000000", "city": "上海"},
+        "educations": [{"school": "复旦大学", "major": "CS"}],
+        "experiences": [{"company": "腾讯", "title": "后端", "description": "在腾讯做支付", "bullets": []}],
+        "projects": [], "skills": ["Python"], "self_summary": "",
+    }, headers=h)
+
+
+def test_generate_privacy_on_redacts_prompt_and_restores(client, auth_headers, monkeypatch):
+    h = auth_headers()
+    _fill_pii_profile(client, h)
+    prov = _CapturingProvider()
+    monkeypatch.setattr(gen, "build_provider_for_user", lambda db, u: prov)
+    r = client.post("/api/generate", json={"target_role": "后端", "privacy_mode": True}, headers=h).json()
+    # prompt sent to the LLM must not contain real PII, but must contain the token
+    assert "腾讯" not in prov.prompt
+    assert "张三" not in prov.prompt
+    assert "z@x.com" not in prov.prompt
+    assert "[公司1]" in prov.prompt
+    assert "复旦大学" in prov.prompt  # school retained
+    # result returned to the user is restored to real values
+    assert "腾讯" in r["tailored_resume"]["summary"]
+    assert "腾讯" in r["recommendations"][0]["reason"]
+    assert r["tailored_resume"]["basic_info"]["name"] == "张三"
+
+
+def test_generate_privacy_off_sends_real(client, auth_headers, monkeypatch):
+    h = auth_headers()
+    _fill_pii_profile(client, h)
+    prov = _CapturingProvider()
+    monkeypatch.setattr(gen, "build_provider_for_user", lambda db, u: prov)
+    client.post("/api/generate", json={"target_role": "后端", "privacy_mode": False}, headers=h)
+    assert "腾讯" in prov.prompt
+    assert "张三" in prov.prompt
